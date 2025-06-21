@@ -5,7 +5,7 @@ from contextlib import AsyncExitStack
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from anthropic import Anthropic
+from huggingface_hub import InferenceClient
 from dotenv import load_dotenv
 
 load_dotenv() #Cargamos la variables de entorno del .env
@@ -15,8 +15,7 @@ class MCPClient:
         #Inicializamos sesion y objetos del cliente
         self.session: Optional[ClientSession] = None
         self.exit_stack = AsyncExitStack()
-        self.anthropic = Anthropic()
-        
+        self.hf_client = InferenceClient()        
     #Los métodos irán aquí
     
     async def connect_to_server(self, server_script_path: str):
@@ -51,7 +50,7 @@ class MCPClient:
         
 
     async def process_query(self, query: str) -> str:
-        """Process a query using Claude and available tools"""
+        """Process a query using Hugging Face and available tools"""
         messages = [
             {
                 "role": "user",
@@ -67,8 +66,8 @@ class MCPClient:
         } for tool in response.tools]
         
         #Llamada inicial a la api de Claude
-        response = self.anthropic.messages.create(
-            model="Claude Opus 4",
+        response = self.hf_client.chat_completion(
+            model="zanchat/falcon-1b",
             max_tokens=1000,
             messages=messages,
             tools=available_tools
@@ -107,8 +106,8 @@ class MCPClient:
                 })
                 
                 #Obtener la siguiente respuesta de claude
-                response = self.anthropic.messages.create(
-                    model = "Claude Opus 4",
+                response = self.hf_client.chat_completion(
+                    model = "zanchat/falcon-1b",
                     max_tokens = 1000,
                     messages = messages,
                     tools = available_tools
